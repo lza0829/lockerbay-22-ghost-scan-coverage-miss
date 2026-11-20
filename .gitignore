@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node / 前端构建
+node_modules/
+dist/
+
+# 本地 SQLite 数据（夹具在 fixtures/，库文件不入仓）
+backend/data/
+data/
+*.db
