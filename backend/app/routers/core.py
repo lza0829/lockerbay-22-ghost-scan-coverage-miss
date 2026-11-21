@@ -2,6 +2,7 @@ from fastapi import APIRouter, Body, HTTPException
 
 from app.db import connect
 from app.modules import ghost_occupy_hold
+from app.modules import ghost_scan_coverage as ghost_cov
 from app.seed import overdue_hours
 from app.services import bay as bay_svc
 from app.services import ingest as ingest_svc
@@ -133,14 +134,56 @@ def put_overdue(body: dict = Body(...)):
     finally:
         conn.close()
 
-# --- plant routes ---
-from app.modules import ghost_scan_coverage as ghost_cov
-
+# --- 幽灵扫描覆盖证明（只读核证口，基线所无） ---
 @router.get("/ghost-scan/coverage")
 def ghost_scan_coverage(run_id: str | None = None):
+    """覆盖成员证明：指定（缺省最新）跑次的已扫/命中集合 + 逐条核证。只读。"""
     conn = connect()
     try:
         return ghost_cov.coverage(conn, run_id)
+    finally:
+        conn.close()
+
+
+@router.get("/ghost-scan/runs")
+def ghost_scan_runs(limit: int = 20):
+    """覆盖跑次列表（最新在前），供核证页选跑次。只读。"""
+    conn = connect()
+    try:
+        return ghost_cov.list_runs(conn, limit)
+    finally:
+        conn.close()
+
+
+@router.get("/ghost-scan/verify")
+def ghost_scan_verify(run_id: str | None = None):
+    """单跑次覆盖核证：缺员 / 越界 / held_n 分叉 / 搁置互证逐条给结论。只读。"""
+    conn = connect()
+    try:
+        resolved = run_id or ghost_cov.latest_run_id(conn)
+        if resolved is None:
+            raise HTTPException(404, "尚无覆盖跑次")
+        return ghost_cov.verify_run(conn, resolved)
+    finally:
+        conn.close()
+
+
+@router.get("/ghost-scan/window")
+def ghost_scan_window():
+    """扫描范围摘要：当前库全域格口与本趟应扫集合。只读。"""
+    conn = connect()
+    try:
+        return ghost_cov.scan_window(conn)
+    finally:
+        conn.close()
+
+
+@router.get("/ghost-scan/reconcile")
+def ghost_scan_reconcile():
+    """占用对账：活态幽灵 vs 最近跑次覆盖，验证扫描范围与占用账一致。只读。"""
+    conn = connect()
+    try:
+        return ghost_occupy_hold.reconcile_coverage(conn)
     finally:
         conn.close()
 

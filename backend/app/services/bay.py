@@ -1,4 +1,5 @@
 from app.modules import ghost_occupy_hold
+from app.modules import ghost_scan_coverage as ghost_cov
 
 
 def overview(conn):
@@ -16,6 +17,10 @@ def overview(conn):
             "SELECT COUNT(*) AS c FROM quarantine WHERE reason='ghost'"
         ).fetchone()["c"],
         "ghost_live": len(ghost_occupy_hold.find_inconsistencies(conn)),
+        "ghost_scan_runs": conn.execute(
+            "SELECT COUNT(*) AS c FROM ghost_scan_runs"
+        ).fetchone()["c"],
+        "ghost_scan_complete": bool(ghost_cov.coverage(conn)["complete"]),
     }
 
 

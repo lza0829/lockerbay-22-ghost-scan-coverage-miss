@@ -38,6 +38,9 @@ onMounted(async () => {
           </div>
           <div v-if="cell.ghost" class="ghost-tag">
             幽灵 · {{ cell.ghost.kind === 'open_occupancy_but_cell_free' ? '有账无格态' : '有格态无账' }}
+            <div v-if="cell.ghost.coverage?.run_id" class="cov-tag" :class="{ covered: cell.ghost.coverage.covered }">
+              {{ cell.ghost.coverage.covered ? '覆盖已证' : '本轮未覆盖' }}
+            </div>
           </div>
           <div class="meta" v-else-if="cell.status === 'occupied' && cell.occupancy?.tracking_no">{{ cell.occupancy.tracking_no }}</div>
           <span class="dot" />

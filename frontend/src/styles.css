@@ -162,6 +162,14 @@ h1 { margin: 0 0 .35rem; font-size: 1.35rem; font-weight: 600; }
   padding: .1rem .25rem;
   line-height: 1.25;
 }
+.cov-tag {
+  margin-top: .15rem;
+  font-size: .62rem;
+  color: var(--muted);
+  border-top: 1px dashed rgba(196, 92, 106, .35);
+  padding-top: .1rem;
+}
+.cov-tag.covered { color: var(--free); }
 .stat-ghost b { color: var(--over); }
 
 button, .btn {

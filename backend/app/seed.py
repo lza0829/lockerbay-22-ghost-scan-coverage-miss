@@ -58,6 +58,38 @@ CREATE TABLE IF NOT EXISTS quarantine (
 CREATE UNIQUE INDEX IF NOT EXISTS ux_quarantine_ghost_fingerprint
   ON quarantine(reason, fingerprint) WHERE reason = 'ghost';
 
+CREATE TABLE IF NOT EXISTS ghost_scan_runs (
+  run_id TEXT PRIMARY KEY,
+  scanned_at TEXT NOT NULL,
+  scanned_n INTEGER NOT NULL CHECK (scanned_n >= 0),
+  hit_n INTEGER NOT NULL CHECK (hit_n >= 0),
+  held_n INTEGER NOT NULL CHECK (held_n >= 0),
+  complete INTEGER NOT NULL DEFAULT 1 CHECK (complete IN (0,1)),
+  universe_json TEXT NOT NULL,
+  universe_digest TEXT NOT NULL,
+  ledger_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+-- 覆盖成员唯一落库形态：一跑次 × 一格口一行；成员行只增不改，跑次不可变。
+CREATE TABLE IF NOT EXISTS ghost_scan_members (
+  run_id TEXT NOT NULL REFERENCES ghost_scan_runs(run_id),
+  cell_id TEXT NOT NULL,
+  scanned INTEGER NOT NULL DEFAULT 1 CHECK (scanned IN (0,1)),
+  hit INTEGER NOT NULL DEFAULT 0 CHECK (hit IN (0,1)),
+  quarantine_id INTEGER,
+  fingerprint TEXT,
+  kind TEXT,
+  PRIMARY KEY (run_id, cell_id),
+  -- 命中格必须带本趟搁置键，否则不算"互证"。
+  CHECK (hit = 0 OR (quarantine_id IS NOT NULL AND fingerprint IS NOT NULL))
+);
+
+CREATE INDEX IF NOT EXISTS ix_ghost_scan_members_hit
+  ON ghost_scan_members(run_id, hit);
+CREATE INDEX IF NOT EXISTS ix_ghost_scan_runs_scanned_at
+  ON ghost_scan_runs(scanned_at);
+
 CREATE TABLE IF NOT EXISTS ingest_batches (
   id TEXT PRIMARY KEY,
   created_at TEXT NOT NULL,
